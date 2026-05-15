@@ -14,6 +14,7 @@
             padding: 20px;
         }
         h1 { color: #89b4fa; }
+        h2 { color: #89b4fa; cursor: pointer; }
         a {
             color: #a6e3a1;
             text-decoration: none;
@@ -21,42 +22,88 @@
         a:hover { text-decoration: underline; }
         ul { list-style: none; padding: 0; }
         li { padding: 4px 0; }
-        li::before { content: "📄 "; }
+        li.file::before { content: "📄 "; }
         li.dir::before { content: "📁 "; }
         .path { color: #6c7086; font-size: 0.85em; }
+        .breadcrumb { color: #6c7086; margin-bottom: 16px; }
+        .breadcrumb a { color: #89b4fa; }
+        .loading { color: #6c7086; font-style: italic; }
     </style>
 </head>
 <body>
-    <h1>~/Developer/dotfiles</h1>
+    <h1>dotfiles</h1>
     <p class="path">A simple index of my dotfiles.</p>
-    <ul>
-        <li><a href="sway-setup-prompt.md">sway-setup-prompt.md</a></li>
-        <li class="dir"><a href=".config/rofi/config.rasi">.config/rofi/config.rasi</a></li>
-        <li class="dir"><a href=".config/rofi/catppuccin-mocha.rasi">.config/rofi/catppuccin-mocha.rasi</a></li>
+    <div class="breadcrumb" id="breadcrumb"></div>
+    <ul id="file-list">
+        <li class="loading">Loading...</li>
     </ul>
 
-    <h2 style="color:#89b4fa;">typecraft_dotfiles/</h2>
-    <ul>
-        <li class="dir"><a href="typecraft_dotfiles/alacritty/">alacritty/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/backgrounds/">backgrounds/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/ghostty/">ghostty/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/hyprland/">hyprland/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/hyprlock/">hyprlock/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/hyprmocha/">hyprmocha/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/hyprpaper/">hyprpaper/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/i3/">i3/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/kitty/">kitty/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/nvim/">nvim/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/picom/">picom/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/polybar/">polybar/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/rofi/">rofi/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/screenlayout/">screenlayout/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/starship/">starship/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/tmux/">tmux/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/waybar/">waybar/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/wofi/">wofi/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/xresources/">xresources/</a></li>
-        <li class="dir"><a href="typecraft_dotfiles/zshrc/">zshrc/</a></li>
-    </ul>
+    <script>
+        const REPO = 'mxagg/dotfiles';
+        const BRANCH = 'main';
+
+        function getPath() {
+            return new URLSearchParams(window.location.search).get('path') || '';
+        }
+
+        function renderBreadcrumb(path) {
+            const bc = document.getElementById('breadcrumb');
+            if (!path) { bc.innerHTML = ''; return; }
+            const parts = path.split('/');
+            let html = '<a href="?">root</a>';
+            let accumulated = '';
+            for (const part of parts) {
+                accumulated += (accumulated ? '/' : '') + part;
+                html += ` / <a href="?path=${encodeURIComponent(accumulated)}">${part}</a>`;
+            }
+            bc.innerHTML = html;
+        }
+
+        async function loadDir(path) {
+            const list = document.getElementById('file-list');
+            list.innerHTML = '<li class="loading">Loading...</li>';
+            renderBreadcrumb(path);
+
+            const url = `https://api.github.com/repos/${REPO}/contents/${path}?ref=${BRANCH}`;
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const items = await res.json();
+
+                const sorted = items
+                    .filter(i => i.name !== 'index.html')
+                    .sort((a, b) => {
+                        if (a.type === b.type) return a.name.localeCompare(b.name);
+                        return a.type === 'dir' ? -1 : 1;
+                    });
+
+                list.innerHTML = '';
+                for (const item of sorted) {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    if (item.type === 'dir') {
+                        li.className = 'dir';
+                        a.href = `?path=${encodeURIComponent(item.path)}`;
+                        a.textContent = item.name + '/';
+                    } else {
+                        li.className = 'file';
+                        a.href = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${item.path}`;
+                        a.textContent = item.name;
+                        a.target = '_blank';
+                    }
+                    li.appendChild(a);
+                    list.appendChild(li);
+                }
+
+                if (sorted.length === 0) {
+                    list.innerHTML = '<li class="loading">Empty directory</li>';
+                }
+            } catch (e) {
+                list.innerHTML = `<li class="loading">Error: ${e.message}</li>`;
+            }
+        }
+
+        loadDir(getPath());
+    </script>
 </body>
 </html>
