@@ -42,6 +42,10 @@
         const REPO = 'mxagg/dotfiles';
         const BRANCH = 'main';
 
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
         function getPath() {
             return new URLSearchParams(window.location.search).get('path') || '';
         }
@@ -54,7 +58,7 @@
             let accumulated = '';
             for (const part of parts) {
                 accumulated += (accumulated ? '/' : '') + part;
-                html += ` / <a href="?path=${encodeURIComponent(accumulated)}">${part}</a>`;
+                html += ` / <a href="?path=${encodeURIComponent(accumulated)}">${escapeHtml(part)}</a>`;
             }
             bc.innerHTML = html;
         }
@@ -99,7 +103,7 @@
                     list.innerHTML = '<li class="loading">Empty directory</li>';
                 }
             } catch (e) {
-                list.innerHTML = `<li class="loading">Error: ${e.message}</li>`;
+                list.innerHTML = `<li class="loading">Error: ${escapeHtml(e.message)}</li>`;
             }
         }
 
