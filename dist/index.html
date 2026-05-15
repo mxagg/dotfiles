@@ -40,7 +40,7 @@
         const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/`;
 
         // FILE_TREE is injected at build time by build.sh
-        const FILE_TREE = /*FILE_TREE_JSON*/null;
+        const FILE_TREE = [{"name":"sway-advanced-llm-setup-prompt.md","path":"sway-advanced-llm-setup-prompt.md","type":"file"},{"name":"sway-llm-setup-prompt.md","path":"sway-llm-setup-prompt.md","type":"file"}];
 
         function getPath() {
             return new URLSearchParams(window.location.search).get('path') || '';
