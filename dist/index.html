@@ -33,58 +33,47 @@
     <p class="path">A simple index of my dotfiles.</p>
     <div class="breadcrumb" id="breadcrumb"></div>
     <ul id="file-list"></ul>
-
     <script>
         const REPO = 'mxagg/dotfiles';
         const BRANCH = 'main';
-        const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/`;
-
-        // FILE_TREE is injected at build time by build.sh
+        const RAW = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/`;
         const FILE_TREE = [{"name":"sway-advanced-llm-setup-prompt.md","path":"sway-advanced-llm-setup-prompt.md","type":"file"},{"name":"sway-llm-setup-prompt.md","path":"sway-llm-setup-prompt.md","type":"file"}];
 
         function getPath() {
             return new URLSearchParams(window.location.search).get('path') || '';
         }
-
         function renderBreadcrumb(path) {
             const bc = document.getElementById('breadcrumb');
             if (!path) { bc.innerHTML = ''; return; }
             const parts = path.split('/');
             let html = '<a href="?">root</a>';
-            let accumulated = '';
-            for (const part of parts) {
-                accumulated += (accumulated ? '/' : '') + part;
-                html += ` / <a href="?path=${encodeURIComponent(accumulated)}">${part}</a>`;
+            let acc = '';
+            for (const p of parts) {
+                acc += (acc ? '/' : '') + p;
+                html += ` / <a href="?path=${encodeURIComponent(acc)}">${p}</a>`;
             }
             bc.innerHTML = html;
         }
-
         function getEntries(path) {
-            if (!FILE_TREE) return [];
             if (!path) return FILE_TREE;
-            const parts = path.split('/');
-            let current = FILE_TREE;
-            for (const part of parts) {
-                const found = current.find(e => e.name === part && e.type === 'dir');
+            let cur = FILE_TREE;
+            for (const p of path.split('/')) {
+                const found = cur.find(e => e.name === p && e.type === 'dir');
                 if (!found) return [];
-                current = found.children;
+                cur = found.children;
             }
-            return current;
+            return cur;
         }
-
         function render() {
             const path = getPath();
             renderBreadcrumb(path);
-            const entries = getEntries(path);
-            const list = document.getElementById('file-list');
-            list.innerHTML = '';
-
-            const sorted = entries.sort((a, b) => {
+            const entries = getEntries(path).sort((a, b) => {
                 if (a.type === b.type) return a.name.localeCompare(b.name);
                 return a.type === 'dir' ? -1 : 1;
             });
-
-            for (const item of sorted) {
+            const list = document.getElementById('file-list');
+            list.innerHTML = '';
+            for (const item of entries) {
                 const li = document.createElement('li');
                 const a = document.createElement('a');
                 if (item.type === 'dir') {
@@ -93,7 +82,7 @@
                     a.textContent = item.name + '/';
                 } else {
                     li.className = 'file';
-                    a.href = RAW_BASE + item.path;
+                    a.href = RAW + item.path;
                     a.textContent = item.name;
                     a.target = '_blank';
                 }
@@ -101,7 +90,6 @@
                 list.appendChild(li);
             }
         }
-
         render();
     </script>
 </body>
